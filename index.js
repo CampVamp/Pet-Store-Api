@@ -1,6 +1,22 @@
 const express = require("express");
+const morgan = require("morgan");
+const mongodb = require("mongodb");
+require("dotenv/config");
+
 const app = express();
+app.use(morgan("dev"));
 app.use(express.json());
+
+const getDatabase = async () => {
+  try {
+    const client = new MongoClient(process.env.MONGO_URI);
+    await client.connect();
+    console.log("Connected to Database");
+    return client.db(process.env.DB_NAME);
+  } catch {
+    console.log("Cannot connect to Database");
+  }
+};
 
 const dogs = [
   { id: 1, name: "Milo" },
@@ -10,7 +26,7 @@ const dogs = [
 
 //Starting Address
 app.get("/", (req, res) => {
-  res.send("Don't Worry, the API works. Change the path above");
+  res.send("Don't Worry, the API works. Change the path above.");
 });
 
 //To Get all the Dogs
@@ -26,16 +42,15 @@ app.get("/api/dogs/:id", (req, res) => {
 });
 
 //POST request
-app.post("/api/dogs", (req, res) => {
-  const dog1 = {
-    id: dogs.length + 1,
-    name: req.body.name,
-  };
-  dogs.push(dog1);
-  res.send(dog1);
+app.post("/api/dogs", async (req, res) => {
+  const db = await getDatabase();
+  const data = req.body;
+
+  await db.collections("pets").insert({ ...data });
+  res.send({data});
 });
 
 //Listening
-app.listen("3000", () => {
-  console.log("http://localhost:3000");
+app.listen(process.env.PORT, () => {
+  console.log(`http://localhost:${process.env.PORT}`);
 });
